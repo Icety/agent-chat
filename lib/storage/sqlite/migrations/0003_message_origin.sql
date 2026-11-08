@@ -1,0 +1,1 @@
+ALTER TABLE `messages` ADD `origin` text DEFAULT 'user' NOT NULL;

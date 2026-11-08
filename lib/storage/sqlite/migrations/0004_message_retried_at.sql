@@ -1,0 +1,1 @@
+ALTER TABLE `messages` ADD `retried_at` integer;
