@@ -59,7 +59,7 @@ const slideoverOpen = computed({
   set: (value: boolean) => { detailsOpen.value = value },
 })
 
-const newChat = () => startChat(conversation.value?.agentId)
+const newChat = async (): Promise<void> => { await startChat(conversation.value?.agentId) }
 const menu = computed(() => [[
   { label: `New chat with ${look.value.label}`, icon: 'i-lucide-square-pen', onSelect: () => { void newChat() } },
   { label: 'Details', icon: 'i-lucide-panel-right', onSelect: () => { detailsOpen.value = true } },
