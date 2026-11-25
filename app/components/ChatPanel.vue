@@ -11,13 +11,15 @@ import type { ComposerInput } from '../utils/chats'
 // (a workspace's chat pane), so there is only one chat to keep working.
 const props = defineProps<{ conversationId: string }>()
 
-const { conversations, messages, loadMessages, send, retry: retryMessage, agentName, activityRuns } = useChat()
+const { conversationById, ensureConversation, messages, loadMessages, send, retry: retryMessage, agentName, activityRuns } = useChat()
 const { now, format } = useChatTime()
 const { lookOf } = useAgents()
 const settingsPath = useAppConfig().agentChat.settingsPath
 const toast = useToast()
 
-const conversation = computed(() => conversations.value.find(c => c.id === props.conversationId))
+const conversation = computed(() => conversationById(props.conversationId))
+// Archived chats are not in the list: load this one by its id.
+watch(() => props.conversationId, conversationId => { void ensureConversation(conversationId) }, { immediate: true })
 const look = computed(() => lookOf(conversation.value?.agentId))
 const { data: status } = useFetch<Status>('/api/status', { server: false })
 const list = computed<ChatMessage[]>(() => messages.value[props.conversationId] ?? [])

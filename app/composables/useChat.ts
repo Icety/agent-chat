@@ -3,6 +3,7 @@ import { messagePreview } from '../../shared/preview'
 import { observeActivity, type ActivityBuffer } from '../utils/activity'
 import { openLiveStream } from '../utils/live'
 import { liveTopics } from '../utils/topics'
+import { findConversation } from '../utils/chats'
 
 // One live stream for the whole app, however many components call useChat().
 let stream: ReturnType<typeof openLiveStream> | undefined
@@ -14,6 +15,8 @@ let openedBefore = false
 export const useChat = () => {
   const agents = useState<AgentSummary[]>('agent-chat:agents', () => [])
   const conversations = useState<ConversationSummary[]>('agent-chat:conversations', () => [])
+  // Conversations opened by their link that the list leaves out (archived ones), by id.
+  const opened = useState<Record<string, ConversationSummary>>('agent-chat:opened', () => ({}))
   const messages = useState<Record<string, ChatMessage[]>>('agent-chat:messages', () => ({}))
   const connected = useState<boolean>('agent-chat:connected', () => false)
   // What this device saw each conversation's agent do (activity receipts), see utils/activity.ts.
@@ -32,6 +35,27 @@ export const useChat = () => {
     const rest = conversations.value.filter(x => x.id !== c.id)
     conversations.value = (c.archived ? rest : [c, ...rest])
       .sort((a, b) => b.lastActivityAt.localeCompare(a.lastActivityAt))
+    if (opened.value[c.id]) opened.value = { ...opened.value, [c.id]: c }
+  }
+
+  // The conversation a screen shows: from the list, else one loaded by its link.
+  const conversationById = (id: string): ConversationSummary | undefined => findConversation(conversations.value, opened.value, id)
+
+  // Makes a conversation available by id when the list does not have it (archived, or the list
+  // is not loaded yet). Resolves to undefined when it does not exist.
+  const ensureConversation = async (id: string): Promise<ConversationSummary | undefined> => {
+    const known = conversationById(id)
+    if (known) return known
+    try {
+      const c = await $fetch<ConversationSummary>(`/api/conversations/${id}`)
+      observe(c)
+      opened.value = { ...opened.value, [c.id]: c }
+      return c
+    }
+    catch (err) {
+      if ((err as { statusCode?: number }).statusCode === 404) return undefined
+      throw err
+    }
   }
 
   const upsertMessage = (m: ChatMessage) => {
@@ -153,5 +177,6 @@ export const useChat = () => {
   return {
     agents, conversations, messages, connected, activityRuns,
     loadLists, loadMessages, connect, send, retry, newConversation, updateConversation, agentName,
+    conversationById, ensureConversation,
   }
 }

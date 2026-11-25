@@ -8,11 +8,13 @@ const props = withDefaults(defineProps<{ conversationId: string, list?: boolean 
 
 const router = useRouter()
 const id = computed(() => props.conversationId)
-const { conversations, updateConversation } = useChat()
+const { conversationById, ensureConversation, updateConversation } = useChat()
 const { lookOf, startChat } = useAgents()
 const chatsPath = useAppConfig().agentChat.chatsPath
 
-const conversation = computed(() => conversations.value.find(c => c.id === id.value))
+const conversation = computed(() => conversationById(id.value))
+// Archived chats are not in the list: load this one by its id.
+watch(id, conversationId => { void ensureConversation(conversationId) }, { immediate: true })
 const { now } = useChatTime()
 const working = computed(() => conversation.value ? isWorking(conversation.value, now.value) : false)
 const look = computed(() => lookOf(conversation.value?.agentId))

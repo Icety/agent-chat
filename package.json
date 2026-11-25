@@ -1,6 +1,6 @@
 {
   "name": "@icety/agent-chat",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Chat with Claude Code agents from a Nuxt app: sessions in tmux, a Claude Code channel, live events, and the chat UI.",
   "type": "module",
   "main": "./nuxt.config.ts",

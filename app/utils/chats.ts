@@ -95,3 +95,7 @@ export const groupChats = (
     other: idle.filter(c => moreIds.has(c.agentId)),
   }
 }
+
+// The conversation a screen shows: the list first (the live one), else one loaded by its link.
+export const findConversation = <C extends { id: string }>(list: C[], opened: Record<string, C>, id: string): C | undefined =>
+  list.find(c => c.id === id) ?? opened[id]

@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import type { AgentSummary, ConversationSummary } from '../../shared/types'
-import { agentLook, groupChats, mainConversation, orderAgents, type AgentLookProvider } from './chats'
+import { agentLook, findConversation, groupChats, mainConversation, orderAgents, type AgentLookProvider } from './chats'
 
 const NOW = new Date('2026-10-15T12:30:00Z')
 const agent = (id: string, name: string): AgentSummary => ({ id, name, cwd: '/tmp', alwaysOn: name === 'Assistant', extraArgs: null, createdAt: NOW.toISOString() })
@@ -43,4 +43,13 @@ test('the first provider that knows an agent wins; unknown agents get the defaul
   const projects: AgentLookProvider = a => a.id === 'b' ? { kind: 'project', icon: 'i-lucide-rocket', label: 'Site', hint: 'Project' } : undefined
   expect(agentLook(agents[1], agents, [projects, host])).toMatchObject({ kind: 'project', label: 'Site' })
   expect(agentLook(agents[0], agents, [projects])).toEqual({ kind: 'chat', label: 'Test bot', hint: 'Assistant' })
+})
+
+// An archived chat opened from its link is not in the list; a live one in the list wins over a stale copy.
+test('findConversation takes the list first, then the ones opened by link', () => {
+  const list = [{ id: 'a', title: 'live' }]
+  const opened = { a: { id: 'a', title: 'stale' }, b: { id: 'b', title: 'archived' } }
+  expect(findConversation(list, opened, 'a')?.title).toBe('live')
+  expect(findConversation(list, opened, 'b')?.title).toBe('archived')
+  expect(findConversation(list, opened, 'c')).toBeUndefined()
 })
