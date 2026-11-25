@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { isWorking } from '../../shared/working'
+import { isMainChat, isWorking } from '../../shared/working'
 
 // One chat. Desktop: the chat list, the thread and (wide screens) its details. Phone: the
 // thread alone. A host page renders this: <ChatThread :conversation-id="id" />.
@@ -62,13 +62,15 @@ const slideoverOpen = computed({
 })
 
 const newChat = async (): Promise<void> => { await startChat(conversation.value?.agentId) }
+// Main stays as it is: no rename, no archive (the server refuses both as well).
+const main = computed(() => Boolean(conversation.value && isMainChat(conversation.value)))
 const menu = computed(() => [[
   { label: `New chat with ${look.value.label}`, icon: 'i-lucide-square-pen', onSelect: () => { void newChat() } },
   { label: 'Details', icon: 'i-lucide-panel-right', onSelect: () => { detailsOpen.value = true } },
-  { label: 'Rename', icon: 'i-lucide-pencil', onSelect: openRename },
-], [
+  ...(main.value ? [] : [{ label: 'Rename', icon: 'i-lucide-pencil', onSelect: openRename }]),
+], ...(main.value ? [] : [[
   { label: 'Archive', icon: 'i-lucide-archive', onSelect: archive },
-]])
+]])])
 
 const back = () => {
   if (window.history.state?.back) router.back()

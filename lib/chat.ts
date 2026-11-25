@@ -4,7 +4,7 @@ import type { Inbox } from './inbox'
 import type { Sessions } from './sessions'
 import type { PushPayload } from './push'
 import { describeTool } from './activity'
-import { MAIN_TITLE } from './attention'
+import { MAIN_TITLE, pickMainConversation } from '../shared/working'
 
 export interface ChatDeps {
   store: ChatStore
@@ -202,11 +202,19 @@ export const createChat = (deps: ChatDeps) => {
     }
   }
 
+  // The chat called Main, even when it was archived (it comes back: what lands there must be seen),
+  // else the agent's oldest open chat, else a new Main.
   const mainConversationFor = async (agentId: string): Promise<Conversation> => {
-    const existing = (await store.conversations.list())
-      .filter(c => c.agentId === agentId)
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())[0]
-    return existing ?? store.conversations.create({ agentId, title: MAIN_TITLE }, now())
+    const all = (await store.conversations.list({ includeArchived: true })).filter(c => c.agentId === agentId)
+    const existing = pickMainConversation(all)
+    if (!existing) return store.conversations.create({ agentId, title: MAIN_TITLE }, now())
+    if (existing.archived) {
+      await store.conversations.setArchived(existing.id, false)
+      const back = { ...existing, archived: false }
+      bus.publish({ type: 'conversation', conversation: back })
+      return back
+    }
+    return existing
   }
 
   // For scripts and crons (`koopa notify "text"`): lands in an agent's main chat. Without an

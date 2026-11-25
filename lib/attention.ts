@@ -1,9 +1,9 @@
 import type { ChatStore } from './ports'
-import { isWorking } from '../shared/working'
+import { isWorking, MAIN_TITLE } from '../shared/working'
 import { UNDELIVERED_AFTER_MS } from '../shared/delivery'
 import type { ChatAttention } from '../shared/types'
 
-export const MAIN_TITLE = 'Main'
+export { MAIN_TITLE } from '../shared/working'
 
 // What a home screen shows about chats: those whose messages did not get through, and running
 // conversations that are working right now (isWorking). Hosts turn this into their own summary.

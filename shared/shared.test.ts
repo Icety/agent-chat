@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { isWorking } from './working'
+import { isMainChat, isWorking, pickMainConversation } from './working'
 import { messagePreview } from './preview'
 import { isUndelivered } from './delivery'
 import { plainText } from './plain'
@@ -42,4 +42,15 @@ test.each([
   ['code fence and table', '```css\n.a { color: red; }\n```\n| a | b |\n| --- | --- |\n| 1 | 2 |', '.a { color: red; } a b 1 2'],
 ])('plainText: %s', (_, markdown, expected) => {
   expect(plainText(markdown)).toBe(expected)
+})
+
+// Scripts and system notes land in an agent's main chat: the one called Main, back from the archive
+// if need be, else its oldest open chat. A wrong pick sends notifications into a random chat.
+test('the main chat is the one called Main, archived or not, else the oldest open one', () => {
+  const c = (id: string, title: string, archived: boolean, createdAt: string) => ({ id, title, archived, createdAt })
+  expect(pickMainConversation([c('b', 'Workout', false, '2026-10-16'), c('a', 'Main', true, '2026-10-15')])?.id).toBe('a')
+  expect(pickMainConversation([c('b', 'Workout', false, '2026-10-16'), c('c', 'Briefing', false, '2026-10-17')])?.id).toBe('b')
+  expect(pickMainConversation([c('b', 'Workout', true, '2026-10-16')])).toBeUndefined()
+  expect(isMainChat({ title: 'Main' })).toBe(true)
+  expect(isMainChat({ title: 'Mainly' })).toBe(false)
 })
